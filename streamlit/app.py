@@ -1,5 +1,5 @@
 """
-Rekomendasi Rute Kunjungan Mantri — Streamlit Dashboard
+Rekomendasi Rute Kunjungan  — Streamlit Dashboard
 ========================================================
 Input : daftar titik kunjungan (NIK, Nama, tipe_kunjungan, longitude, latitude)
 Output: urutan rute optimal (Nearest-Neighbor + 2-opt) + peta interaktif + ringkasan jarak
@@ -18,7 +18,7 @@ from streamlit_folium import st_folium
 # ----------------------------------------------------------------------
 # Page config & BRI styling
 # ----------------------------------------------------------------------
-st.set_page_config(page_title="Rekomendasi Rute Mantri — BRI",
+st.set_page_config(page_title="Rekomendasi Rute Optimal",
                    page_icon="🛵", layout="wide")
 
 BRI = "#0857C3"
@@ -217,8 +217,8 @@ if not check_password():
 # Sidebar — input
 # ----------------------------------------------------------------------
 with st.sidebar:
-    st.markdown(f"### 🛵 Rute Mantri")
-    st.caption("Micro Risk Management Group · BRI")
+    st.markdown(f"### Optimalisasi Rute Kunjungan")
+    st.caption("Micro Risk Management Group ")
     if st.button("🔒 Keluar", use_container_width=True):
         st.session_state.auth_ok = False
         st.rerun()
@@ -257,7 +257,7 @@ elif source == "Input manual (ketik koordinat)":
     if "manual_df" not in st.session_state:
         st.session_state.manual_df = pd.DataFrame({
             "NIK": ["1111", "2222", "3333"],
-            "Nama": ["Tio", "Astri", "Budi"],
+            "Nama": ["Andi", "Ekp", "Budi"],
             "tipe_kunjungan": ["penagihan", "penagihan", "pembinaan"],
             "longitude": [107.568838, 107.572601, 107.560000],
             "latitude": [-6.917995, -6.911114, -6.905000],
@@ -305,8 +305,8 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**3. Asumsi estimasi tempuh**")
     speed = st.slider("Kecepatan rata-rata motor (km/jam)", 15, 60, 30, 5)
-    visit_min = st.slider("Durasi tiap kunjungan (menit)", 0, 60, 15, 5)
-    fuel_eff = st.slider("Konsumsi BBM motor (km/liter)", 20, 70, 45, 5)
+    visit_min = st.slider("Durasi tiap kunjungan (menit)", 0, 60, 30, 5)
+    fuel_eff = st.slider("Konsumsi BBM motor (km/liter)", 20, 70, 30, 5)
     fuel_price = st.number_input("Harga BBM (Rp/liter)", min_value=0, value=12500, step=500)
     detour = st.slider("Faktor koreksi jarak jalan (×)", 1.0, 1.8, 1.3, 0.1,
                        help="Jarak garis-lurus dikalikan faktor ini agar mendekati jarak jalan nyata.")
@@ -349,9 +349,9 @@ with right:
 
     # ---- Estimasi jarak, waktu & BBM ----
     road_km = opt_len * detour                       # jarak jalan ≈ garis lurus × faktor koreksi
-    travel_min = road_km / speed * 60 if speed else 0
+    travel_min = (road_km*2) / speed * 60 if speed else 0
     total_min = travel_min + visit_min * len(od)     # tempuh + waktu kunjungan
-    liters = road_km / fuel_eff if fuel_eff else 0
+    liters = (road_km * 1.5) / fuel_eff if fuel_eff else 0
     fuel_cost = liters * fuel_price
 
     def hhmm(m):
