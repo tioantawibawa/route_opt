@@ -188,7 +188,7 @@ with st.sidebar:
     elif source == "Input manual (ketik koordinat)":
         st.caption("Isi/ubah tabel titik kunjungan di area utama, lalu rute dihitung otomatis.")
 
-st.title("Rekomendasi Rute Kunjungan Mantri")
+st.title("Rekomendasi Rute Kunjungan ")
 st.markdown("Optimalkan urutan kunjungan harian agar **jarak tempuh minimal** — "
             "berbasis algoritma *Nearest-Neighbor + 2-opt* (varian Travelling Salesman Problem).")
 
