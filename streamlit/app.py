@@ -191,7 +191,7 @@ def check_password():
     with mid:
         st.markdown(f"<div style='text-align:center;margin-top:6vh'>"
                     f"<div style='font-size:3rem'>🛵🔒</div>"
-                    f"<h2 style='color:{BRI};margin-bottom:0'>Rekomendasi Rute Mantri</h2>"
+                    f"<h2 style='color:{BRI};margin-bottom:0'>Rekomendasi Rute Optimal</h2>"
                     f"<p style='color:#5A6B82'>Masukkan kata sandi untuk mengakses dashboard.</p>"
                     f"</div>", unsafe_allow_html=True)
         with st.form("login_form", clear_on_submit=False):
