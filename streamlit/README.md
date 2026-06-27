@@ -37,6 +37,28 @@ Aplikasi terbuka di `http://localhost:8501`.
 
 ---
 
+## Proteksi password (login)
+
+Dashboard dilindungi halaman login — pengguna harus memasukkan kata sandi sebelum melihat isi dashboard. Tombol **🔒 Keluar** tersedia di sidebar untuk logout.
+
+**Kata sandi default:** `rutemantri2026` (untuk uji coba lokal). **Wajib diganti sebelum deploy publik.**
+
+### Cara mengatur kata sandi
+
+**Lokal** — buat file `streamlit/.streamlit/secrets.toml` (salin dari `secrets.toml.example`):
+```toml
+app_password = "kata_sandi_pilihan_anda"
+```
+
+**Streamlit Community Cloud** — buka app Anda → **Settings → Secrets**, lalu tempel:
+```toml
+app_password = "kata_sandi_pilihan_anda"
+```
+
+> File `secrets.toml` sudah masuk `.gitignore` sehingga kata sandi asli tidak ikut ter-commit ke repo. Perbandingan kata sandi dilakukan via hash SHA-256, dan status login disimpan per sesi.
+
+---
+
 ## Format file input
 
 CSV atau Excel dengan kolom berikut (hanya `longitude` & `latitude` yang **wajib**):

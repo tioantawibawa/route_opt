@@ -18,7 +18,7 @@ from streamlit_folium import st_folium
 # ----------------------------------------------------------------------
 # Page config & BRI styling
 # ----------------------------------------------------------------------
-st.set_page_config(page_title="Rekomendasi Rute - MRM",
+st.set_page_config(page_title="Rekomendasi Rute Mantri — BRI",
                    page_icon="🛵", layout="wide")
 
 BRI = "#0857C3"
@@ -168,11 +168,60 @@ def make_map(df, order):
 
 
 # ----------------------------------------------------------------------
+# Password gate (login sebelum dashboard)
+# ----------------------------------------------------------------------
+import hashlib
+
+
+def _get_secret_password():
+    # Prioritas: Streamlit secrets (aman, untuk deploy) → fallback default lokal.
+    try:
+        return st.secrets["app_password"]
+    except Exception:
+        return "rutemantri2026"  # ganti via .streamlit/secrets.toml saat deploy
+
+
+def check_password():
+    """Tampilkan form login; True jika sudah terautentikasi."""
+    if st.session_state.get("auth_ok", False):
+        return True
+
+    # Halaman login terpusat
+    _, mid, _ = st.columns([1, 1.3, 1])
+    with mid:
+        st.markdown(f"<div style='text-align:center;margin-top:6vh'>"
+                    f"<div style='font-size:3rem'>🛵🔒</div>"
+                    f"<h2 style='color:{BRI};margin-bottom:0'>Rekomendasi Rute Mantri</h2>"
+                    f"<p style='color:#5A6B82'>Masukkan kata sandi untuk mengakses dashboard.</p>"
+                    f"</div>", unsafe_allow_html=True)
+        with st.form("login_form", clear_on_submit=False):
+            pwd = st.text_input("Kata sandi", type="password", label_visibility="collapsed",
+                                placeholder="Kata sandi")
+            submitted = st.form_submit_button("Masuk", use_container_width=True, type="primary")
+        if submitted:
+            correct = _get_secret_password()
+            if hashlib.sha256(pwd.encode()).hexdigest() == hashlib.sha256(str(correct).encode()).hexdigest():
+                st.session_state.auth_ok = True
+                st.rerun()
+            else:
+                st.error("Kata sandi salah. Coba lagi.")
+        st.caption("Hubungi admin jika lupa kata sandi.")
+    return False
+
+
+if not check_password():
+    st.stop()
+
+
+# ----------------------------------------------------------------------
 # Sidebar — input
 # ----------------------------------------------------------------------
 with st.sidebar:
-    st.markdown(f"### Optimalisasi Rute")
-    st.caption("Micro Risk Management")
+    st.markdown(f"### 🛵 Rute Mantri")
+    st.caption("Micro Risk Management Group · BRI")
+    if st.button("🔒 Keluar", use_container_width=True):
+        st.session_state.auth_ok = False
+        st.rerun()
     st.markdown("---")
     st.markdown("**1. Sumber data titik kunjungan**")
     source = st.radio("Pilih sumber:",
@@ -188,7 +237,7 @@ with st.sidebar:
     elif source == "Input manual (ketik koordinat)":
         st.caption("Isi/ubah tabel titik kunjungan di area utama, lalu rute dihitung otomatis.")
 
-st.title("Rekomendasi Rute Kunjungan ")
+st.title("Rekomendasi Rute Kunjungan Mantri")
 st.markdown("Optimalkan urutan kunjungan harian agar **jarak tempuh minimal** — "
             "berbasis algoritma *Nearest-Neighbor + 2-opt* (varian Travelling Salesman Problem).")
 
@@ -208,7 +257,7 @@ elif source == "Input manual (ketik koordinat)":
     if "manual_df" not in st.session_state:
         st.session_state.manual_df = pd.DataFrame({
             "NIK": ["1111", "2222", "3333"],
-            "Nama": ["Andi", "Eko", "Budi"],
+            "Nama": ["Tio", "Astri", "Budi"],
             "tipe_kunjungan": ["penagihan", "penagihan", "pembinaan"],
             "longitude": [107.568838, 107.572601, 107.560000],
             "latitude": [-6.917995, -6.911114, -6.905000],
@@ -256,10 +305,10 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**3. Asumsi estimasi tempuh**")
     speed = st.slider("Kecepatan rata-rata motor (km/jam)", 15, 60, 30, 5)
-    visit_min = st.slider("Durasi tiap kunjungan (menit)", 0, 60, 30, 5)
-    fuel_eff = st.slider("Konsumsi BBM motor (km/liter)", 20, 70, 30, 5)
+    visit_min = st.slider("Durasi tiap kunjungan (menit)", 0, 60, 15, 5)
+    fuel_eff = st.slider("Konsumsi BBM motor (km/liter)", 20, 70, 45, 5)
     fuel_price = st.number_input("Harga BBM (Rp/liter)", min_value=0, value=12500, step=500)
-    detour = st.slider("Faktor koreksi jarak jalan (×)", 1.0, 1.8, 1.8, 0.1,
+    detour = st.slider("Faktor koreksi jarak jalan (×)", 1.0, 1.8, 1.3, 0.1,
                        help="Jarak garis-lurus dikalikan faktor ini agar mendekati jarak jalan nyata.")
 
 # ----------------------------------------------------------------------
@@ -300,9 +349,9 @@ with right:
 
     # ---- Estimasi jarak, waktu & BBM ----
     road_km = opt_len * detour                       # jarak jalan ≈ garis lurus × faktor koreksi
-    travel_min = (road_km*2) / speed * 60 if speed else 0
+    travel_min = road_km / speed * 60 if speed else 0
     total_min = travel_min + visit_min * len(od)     # tempuh + waktu kunjungan
-    liters = (road_km * 1.5) / fuel_eff if fuel_eff else 0
+    liters = road_km / fuel_eff if fuel_eff else 0
     fuel_cost = liters * fuel_price
 
     def hhmm(m):
@@ -312,7 +361,7 @@ with right:
     st.markdown("##### 🛵 Estimasi tempuh rute rekomendasi")
     e1, e2 = st.columns(2)
     e1.metric("Jarak jalan (≈)", f"{road_km:.1f} km", help=f"{opt_len:.2f} km garis lurus × {detour:.1f}")
-    e2.metric("Waktu tempuh berkendara antar titik", hhmm(travel_min))
+    e2.metric("Waktu tempuh berkendara", hhmm(travel_min))
     e3, e4 = st.columns(2)
     e3.metric("Total waktu (+ kunjungan)", hhmm(total_min),
               help=f"termasuk {visit_min} mnt × {len(od)} kunjungan")
