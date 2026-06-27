@@ -208,7 +208,7 @@ elif source == "Input manual (ketik koordinat)":
     if "manual_df" not in st.session_state:
         st.session_state.manual_df = pd.DataFrame({
             "NIK": ["1111", "2222", "3333"],
-            "Nama": ["Tio", "Astri", "Budi"],
+            "Nama": ["Andi", "Eko", "Budi"],
             "tipe_kunjungan": ["penagihan", "penagihan", "pembinaan"],
             "longitude": [107.568838, 107.572601, 107.560000],
             "latitude": [-6.917995, -6.911114, -6.905000],
