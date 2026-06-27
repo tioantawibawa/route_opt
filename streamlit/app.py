@@ -259,7 +259,7 @@ with st.sidebar:
     visit_min = st.slider("Durasi tiap kunjungan (menit)", 0, 60, 15, 5)
     fuel_eff = st.slider("Konsumsi BBM motor (km/liter)", 20, 70, 45, 5)
     fuel_price = st.number_input("Harga BBM (Rp/liter)", min_value=0, value=12500, step=500)
-    detour = st.slider("Faktor koreksi jarak jalan (×)", 1.0, 1.8, 1.3, 0.1,
+    detour = st.slider("Faktor koreksi jarak jalan (×)", 1.0, 1.8, 1.8, 0.1,
                        help="Jarak garis-lurus dikalikan faktor ini agar mendekati jarak jalan nyata.")
 
 # ----------------------------------------------------------------------
