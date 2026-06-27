@@ -302,7 +302,7 @@ with right:
     road_km = opt_len * detour                       # jarak jalan ≈ garis lurus × faktor koreksi
     travel_min = (road_km*2) / speed * 60 if speed else 0
     total_min = travel_min + visit_min * len(od)     # tempuh + waktu kunjungan
-    liters = road_km / fuel_eff if fuel_eff else 0
+    liters = (road_km * 1.5) / fuel_eff if fuel_eff else 0
     fuel_cost = liters * fuel_price
 
     def hhmm(m):
