@@ -63,6 +63,6 @@ Selain unggah file, tersedia juga **Input manual** — ketik/tempel koordinat ti
 2. **Matriks jarak** — haversine antar seluruh titik.
 3. **Nearest-Neighbor** — bangun rute awal dari titik start.
 4. **2-opt** — balik segmen rute selama total jarak berkurang.
-5. **Output** — urutan optimal + peta + jarak per leg + total penghematan.
+5. **Output** — urutan optimal + peta + jarak per leg + total penghematan, plus **estimasi jarak jalan, waktu tempuh, konsumsi BBM motor & biaya BBM** (asumsi kecepatan, efisiensi BBM, harga, durasi kunjungan, dan faktor koreksi jarak jalan dapat disetel di sidebar).
 
 Untuk akurasi jarak jalan sebenarnya (bukan garis lurus), matriks haversine dapat diganti dengan **OSRM** atau **Google Distance Matrix API**.

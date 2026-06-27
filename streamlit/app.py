@@ -253,6 +253,14 @@ with st.sidebar:
     start_idx = names.index(start_label)
     st.markdown("---")
     st.caption(f"{len(df)} titik kunjungan dimuat.")
+    st.markdown("---")
+    st.markdown("**3. Asumsi estimasi tempuh**")
+    speed = st.slider("Kecepatan rata-rata motor (km/jam)", 15, 60, 30, 5)
+    visit_min = st.slider("Durasi tiap kunjungan (menit)", 0, 60, 15, 5)
+    fuel_eff = st.slider("Konsumsi BBM motor (km/liter)", 20, 70, 45, 5)
+    fuel_price = st.number_input("Harga BBM (Rp/liter)", min_value=0, value=12500, step=500)
+    detour = st.slider("Faktor koreksi jarak jalan (×)", 1.0, 1.8, 1.3, 0.1,
+                       help="Jarak garis-lurus dikalikan faktor ini agar mendekati jarak jalan nyata.")
 
 # ----------------------------------------------------------------------
 # Optimize
@@ -288,10 +296,41 @@ with right:
         "Tipe": od["tipe_kunjungan"],
         "Jarak dari titik sebelumnya (km)": legs,
     })
-    st.dataframe(out, hide_index=True, use_container_width=True, height=430)
+    st.dataframe(out, hide_index=True, use_container_width=True, height=320)
 
-    csv = out.to_csv(index=False).encode("utf-8")
-    st.download_button("⬇️ Unduh rute (CSV)", csv, "rute_rekomendasi.csv", "text/csv",
+    # ---- Estimasi jarak, waktu & BBM ----
+    road_km = opt_len * detour                       # jarak jalan ≈ garis lurus × faktor koreksi
+    travel_min = road_km / speed * 60 if speed else 0
+    total_min = travel_min + visit_min * len(od)     # tempuh + waktu kunjungan
+    liters = road_km / fuel_eff if fuel_eff else 0
+    fuel_cost = liters * fuel_price
+
+    def hhmm(m):
+        h = int(m // 60); mm = int(round(m - h * 60))
+        return (f"{h} jam {mm} mnt" if h else f"{mm} mnt")
+
+    st.markdown("##### 🛵 Estimasi tempuh rute rekomendasi")
+    e1, e2 = st.columns(2)
+    e1.metric("Jarak jalan (≈)", f"{road_km:.1f} km", help=f"{opt_len:.2f} km garis lurus × {detour:.1f}")
+    e2.metric("Waktu tempuh berkendara", hhmm(travel_min))
+    e3, e4 = st.columns(2)
+    e3.metric("Total waktu (+ kunjungan)", hhmm(total_min),
+              help=f"termasuk {visit_min} mnt × {len(od)} kunjungan")
+    e4.metric("Konsumsi BBM", f"{liters:.2f} L")
+    st.metric("Estimasi biaya BBM", f"Rp {fuel_cost:,.0f}".replace(",", "."))
+    st.caption(f"Asumsi: {speed} km/jam · {fuel_eff} km/L · Rp {fuel_price:,.0f}/L · faktor jalan ×{detour:.1f}".replace(",", "."))
+
+    # add estimasi to CSV export
+    summary = pd.DataFrame({
+        "Keterangan": ["Jarak rute (garis lurus, km)", "Jarak jalan estimasi (km)",
+                       "Waktu tempuh berkendara (menit)", "Total waktu incl. kunjungan (menit)",
+                       "Konsumsi BBM (liter)", "Estimasi biaya BBM (Rp)"],
+        "Nilai": [round(opt_len, 2), round(road_km, 2), round(travel_min, 1),
+                  round(total_min, 1), round(liters, 2), round(fuel_cost, 0)],
+    })
+    csv = ("RUTE REKOMENDASI\n" + out.to_csv(index=False)
+           + "\nRINGKASAN ESTIMASI\n" + summary.to_csv(index=False)).encode("utf-8")
+    st.download_button("⬇️ Unduh rute + estimasi (CSV)", csv, "rute_rekomendasi.csv", "text/csv",
                        use_container_width=True)
 
 st.markdown("---")
