@@ -312,7 +312,7 @@ with right:
     st.markdown("##### 🛵 Estimasi tempuh rute rekomendasi")
     e1, e2 = st.columns(2)
     e1.metric("Jarak jalan (≈)", f"{road_km:.1f} km", help=f"{opt_len:.2f} km garis lurus × {detour:.1f}")
-    e2.metric("Waktu tempuh berkendara", hhmm(travel_min))
+    e2.metric("Waktu tempuh berkendara antar titik", hhmm(travel_min))
     e3, e4 = st.columns(2)
     e3.metric("Total waktu (+ kunjungan)", hhmm(total_min),
               help=f"termasuk {visit_min} mnt × {len(od)} kunjungan")
