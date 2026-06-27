@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Route Optimization — Evaluasi Rute Mantri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vendor/leaflet.css"/>
+<script src="vendor/leaflet.js"></script>
+<script src="vendor/chart.umd.min.js"></script>
+<style>
+:root{
+  --ink:#0a1a2f; --paper:#f5f2ec; --card:#ffffff;
+  --navy:#13335c; --navy2:#1d4d87; --sky:#3b82c4;
+  --amber:#e8a13a; --amber-d:#c47e1c; --rust:#b3492d;
+  --teal:#1f8a78; --line:#dcd6ca; --muted:#5b6675;
+  --good:#1f8a78; --bad:#b3492d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+.mono{font-family:'JetBrains Mono',monospace}
+h1,h2,h3{font-family:'Sora',sans-serif;letter-spacing:-.02em}
+
+/* HERO */
+header{background:linear-gradient(160deg,#0a1a2f 0%,#13335c 55%,#1d4d87 100%);color:#fff;padding:46px 0 130px;position:relative;overflow:hidden}
+header::after{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.10) 1px,transparent 0);background-size:26px 26px;opacity:.5}
+.brand{display:flex;align-items:center;gap:11px;font-family:'Sora';font-weight:700;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#9ec3e6;position:relative;z-index:1}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--amber)}
+.hero-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:40px;align-items:end;margin-top:30px;position:relative;z-index:1}
+.eyebrow{font-family:'JetBrains Mono';font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);margin-bottom:14px}
+h1{font-size:clamp(30px,4.4vw,52px);font-weight:800;line-height:1.04}
+h1 em{font-style:normal;color:var(--amber);position:relative}
+.lede{color:#c8d8ea;font-size:16px;margin-top:18px;max-width:46ch}
+.hero-stat{text-align:right}
+.hero-stat .big{font-family:'Sora';font-weight:800;font-size:clamp(56px,9vw,104px);line-height:.9;color:#fff}
+.hero-stat .big span{color:var(--amber)}
+.hero-stat .cap{font-family:'JetBrains Mono';font-size:13px;color:#9ec3e6;letter-spacing:.04em;margin-top:8px}
+
+/* KPI STRIP */
+.kpis{margin-top:-88px;position:relative;z-index:3;display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 18px;box-shadow:0 10px 30px rgba(10,26,47,.10)}
+.kpi .lbl{font-family:'JetBrains Mono';font-size:11px;letter-spacing:.10em;text-transform:uppercase;color:var(--muted)}
+.kpi .val{font-family:'Sora';font-weight:800;font-size:30px;margin-top:8px;color:var(--navy)}
+.kpi .val small{font-size:15px;font-weight:600;color:var(--muted)}
+.kpi .sub{font-size:12.5px;color:var(--muted);margin-top:5px}
+
+/* SECTIONS */
+section{padding:54px 0}
+.sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:8px}
+.sec-num{font-family:'JetBrains Mono';font-size:13px;color:var(--amber-d);font-weight:600}
+h2{font-size:26px;font-weight:700;color:var(--navy)}
+.sec-sub{color:var(--muted);font-size:15px;margin:6px 0 28px;max-width:64ch}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.cols-3{display:grid;grid-template-columns:1.4fr 1fr;gap:20px}
+.chart-box{position:relative;height:320px}
+.panel h3{font-size:16px;color:var(--navy);margin-bottom:4px}
+.panel .ph{font-size:13px;color:var(--muted);margin-bottom:16px}
+
+/* MAP */
+#map{height:440px;border-radius:12px;border:1px solid var(--line)}
+.legend{display:flex;gap:20px;margin-top:14px;flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);font-weight:500}
+.swatch{width:22px;height:4px;border-radius:2px}
+.map-stat{display:flex;gap:14px;margin-top:14px}
+.map-stat div{flex:1;background:var(--paper);border-radius:10px;padding:12px 14px;border:1px solid var(--line)}
+.map-stat .n{font-family:'Sora';font-weight:800;font-size:22px;color:var(--navy)}
+.map-stat .l{font-size:11.5px;color:var(--muted);font-family:'JetBrains Mono';letter-spacing:.04em;text-transform:uppercase}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-family:'JetBrains Mono';font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:11px 12px;border-bottom:2px solid var(--line)}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--line)}
+.tbl tr:hover td{background:#faf8f3}
+.tbl .num{text-align:right;font-family:'JetBrains Mono';font-weight:500}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px}
+.bar{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--rust),var(--amber))}
+.barcell{min-width:90px}
+.toolbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.toolbar button{font-family:'Inter';font-size:13px;font-weight:600;padding:7px 14px;border:1px solid var(--line);background:#fff;border-radius:20px;cursor:pointer;color:var(--muted);transition:.15s}
+.toolbar button.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.toolbar button:hover{border-color:var(--navy2)}
+
+/* ALGO */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:8px}
+.step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;position:relative}
+.step .k{font-family:'JetBrains Mono';font-size:12px;color:var(--amber-d);font-weight:600}
+.step h4{font-family:'Sora';font-size:15px;margin:10px 0 7px;color:var(--navy)}
+.step p{font-size:13px;color:var(--muted)}
+.codeblock{background:#0a1a2f;color:#cfe0f0;border-radius:14px;padding:22px 24px;font-family:'JetBrains Mono';font-size:12.5px;line-height:1.7;overflow-x:auto;margin-top:20px}
+.codeblock .c{color:#6a8aae}
+.codeblock .k{color:var(--amber)}
+.codeblock .s{color:#7fcab5}
+
+.callout{background:linear-gradient(135deg,#13335c,#1d4d87);color:#fff;border-radius:16px;padding:30px 32px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-top:14px}
+.callout div .n{font-family:'Sora';font-weight:800;font-size:34px;color:var(--amber)}
+.callout div .l{font-size:13px;color:#c8d8ea;margin-top:4px}
+
+footer{padding:34px 0;border-top:1px solid var(--line);color:var(--muted);font-size:13px;text-align:center}
+@media(max-width:880px){
+  .hero-grid,.cols,.cols-3{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr 1fr}
+  .steps{grid-template-columns:1fr 1fr}
+  .callout{grid-template-columns:1fr}
+  .hero-stat{text-align:left}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand"><span class="dot"></span> BRI · Micro Risk Analytics</div>
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">Route Optimization · Pemasaran · Pembinaan · Penagihan</div>
+        <h1>Setiap kilometer rute mantri<br>adalah <em>biaya & waktu</em><br>yang bisa dipangkas.</h1>
+        <p class="lede">Evaluasi rute aktual mantri lapangan dan model optimalisasi berbasis data GPS kunjungan harian.</p>
+      </div>
+      <div class="hero-stat">
+        <div class="big"><span id="h-save">55</span>%</div>
+        <div class="cap">rata-rata jarak rute<br>dapat dipangkas</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="kpis" id="kpis"></div>
+</div>
+
+<!-- 1. EVALUASI -->
+<section class="wrap">
+  <div class="sec-head"><span class="sec-num">01</span><h2>Evaluasi rute penagihan saat ini</h2></div>
+  <p class="sec-sub">Rute aktual direkonstruksi dari urutan waktu kunjungan (jam_kunjungan) per mantri per hari. Jarak dihitung dengan formula haversine antar titik berurutan, lalu dibandingkan dengan rute optimal sebagai benchmark.</p>
+  <div class="cols-3">
+    <div class="panel">
+      <h3>Jarak rute mingguan: aktual vs optimal</h3>
+      <p class="ph">Rata-rata km per mantri-hari, dirata-ratakan per minggu</p>
+      <div class="chart-box"><canvas id="trend"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>Komposisi aktivitas kunjungan</h3>
+      <p class="ph">Penagihan & pemasaran adalah beban rute terbesar</p>
+      <div class="chart-box"><canvas id="donut"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. PETA -->
+<section class="wrap">
+  <div class="sec-head"><span class="sec-num">02</span><h2>Anatomi satu hari rute mantri</h2></div>
+  <p class="sec-sub">Contoh nyata dari data: satu mantri, satu hari kerja. Garis merah adalah urutan kunjungan aktual (berdasar waktu), garis hijau adalah rute hasil optimalisasi terhadap titik yang sama.</p>
+  <div class="panel">
+    <div id="map"></div>
+    <div class="legend">
+      <span><span class="swatch" style="background:#b3492d"></span> Rute aktual (urutan waktu)</span>
+      <span><span class="swatch" style="background:#1f8a78"></span> Rute optimal (model)</span>
+      <span><span class="swatch" style="background:#13335c;width:14px;height:14px;border-radius:50%"></span> Titik kunjungan</span>
+    </div>
+    <div class="map-stat" id="mapstat"></div>
+  </div>
+</section>
+
+<!-- 3. REGIONAL -->
+<section class="wrap">
+  <div class="sec-head"><span class="sec-num">03</span><h2>Peringkat efisiensi per wilayah & unit kerja</h2></div>
+  <p class="sec-sub">Semakin tinggi potensi penghematan, semakin tidak efisien pola rute saat ini — dan semakin besar dampak implementasi optimalisasi.</p>
+  <div class="cols">
+    <div class="panel">
+      <h3>Potensi penghematan per Kanwil</h3>
+      <p class="ph">% jarak yang dapat dipangkas vs rata-rata km aktual/hari</p>
+      <div class="chart-box"><canvas id="region"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>Unit kerja prioritas</h3>
+      <p class="ph">Unit dengan rute terpanjang & potensi penghematan tertinggi</p>
+      <div class="toolbar" id="uktools">
+        <button data-sort="saving" class="active">Penghematan %</button>
+        <button data-sort="act">Km aktual</button>
+        <button data-sort="avgn">Kunjungan/hari</button>
+      </div>
+      <div style="max-height:300px;overflow-y:auto">
+        <table class="tbl" id="uktbl"><thead><tr>
+          <th>Unit Kerja</th><th class="num">Aktual</th><th class="num">Optimal</th><th class="barcell">Hemat</th>
+        </tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. ALGORITMA -->
+<section class="wrap">
+  <div class="sec-head"><span class="sec-num">04</span><h2>Model optimalisasi rute</h2></div>
+  <p class="sec-sub">Persoalan ini adalah varian Travelling Salesman Problem (TSP) berskala harian per mantri. Modelnya ringan, deterministik, dan bisa berjalan di perangkat lapangan tanpa server berat.</p>
+  <div class="steps">
+    <div class="step"><div class="k">STEP 01</div><h4>Ingest & cleaning</h4><p>Filter status DONE, buang koordinat di luar bounding-box Indonesia (GPS error), urutkan per mantri-hari.</p></div>
+    <div class="step"><div class="k">STEP 02</div><h4>Matriks jarak</h4><p>Haversine antar seluruh titik kunjungan. Dapat di-upgrade ke jarak jalan (OSRM) untuk akurasi rute nyata.</p></div>
+    <div class="step"><div class="k">STEP 03</div><h4>Nearest-Neighbor</h4><p>Konstruksi rute awal: dari titik awal, selalu pilih kunjungan terdekat yang belum dikunjungi.</p></div>
+    <div class="step"><div class="k">STEP 04</div><h4>2-opt refinement</h4><p>Tukar segmen rute selama masih memperpendek total jarak. Konvergen cepat untuk ≤40 titik/hari.</p></div>
+  </div>
+  <div class="codeblock"><span class="c"># Inti model — Nearest-Neighbor + 2-opt (Python)</span>
+<span class="k">def</span> optimize_route(lat, lon):
+    order = nearest_neighbor(lat, lon, start=<span class="s">0</span>)   <span class="c"># rute greedy awal</span>
+    order, km = two_opt(lat, lon, order)            <span class="c"># perbaikan lokal</span>
+    <span class="k">return</span> order, km                             <span class="c"># urutan optimal + jarak (km)</span>
+
+<span class="c"># 2-opt: balik segmen [i..k] jika total rute jadi lebih pendek</span>
+<span class="k">def</span> two_opt(lat, lon, order):
+    <span class="k">for</span> i <span class="k">in</span> range(<span class="s">1</span>, n-<span class="s">1</span>):
+        <span class="k">for</span> k <span class="k">in</span> range(i+<span class="s">1</span>, n):
+            new = order[:i] + order[i:k+<span class="s">1</span>][::-<span class="s">1</span>] + order[k+<span class="s">1</span>:]
+            <span class="k">if</span> route_length(new) &lt; best_len: best = new</div>
+</section>
+
+<!-- 5. DAMPAK -->
+<section class="wrap">
+  <div class="sec-head"><span class="sec-num">05</span><h2>Proyeksi dampak implementasi</h2></div>
+  <p class="sec-sub">Diekstrapolasi dari penghematan jarak terukur pada seluruh mantri-hari dalam dataset.</p>
+  <div class="callout" id="impact"></div>
+  <p class="sec-sub" style="margin-top:22px">Penghematan jarak berarti lebih banyak debitur dapat dikunjungi per hari (kapasitas penagihan & pembinaan naik), BBM dan waktu tempuh turun, serta cakupan pembinaan nasabah baru meluas tanpa menambah headcount.</p>
+</section>
+
+<footer class="wrap">
+  Dashboard analitik rute mantri · Dibangun dengan Python (pandas, NN+2-opt) · Leaflet · Chart.js<br>
+  Dapat dipublikasikan gratis via GitHub Pages. Data agregat, tanpa identitas debitur.
+</footer>
+
+<script>
+const DATA = {"kpi":{"total_visits":341412,"n_mantri":296,"n_uker":49,"n_region":5,"mantri_days":22142,"avg_visits_day":15.0,"avg_km_day":25.85,"opt_km_day":11.55,"saving_pct":55.3,"km_saved_total":316700,"visit_types":{"penagihan":205222,"pemasaran":125590,"pembinaan":9573,"ots":1027}},"region":[{"name":"Bandung","days":4352,"act":24.39,"opt":11.51,"saving":52.8,"avgn":15.1},{"name":"Denpasar","days":4207,"act":27.7,"opt":12.27,"saving":55.7,"avgn":15.3},{"name":"KANWIL MALANG","days":4993,"act":25.65,"opt":11.89,"saving":53.7,"avgn":15.2},{"name":"Makassar","days":4010,"act":37.39,"opt":14.52,"saving":61.2,"avgn":15.9},{"name":"Yogyakarta","days":4580,"act":15.69,"opt":7.97,"saving":49.2,"avgn":13.7}],"uker":[{"name":"UNIT RABA RABA BIMA","region":"Denpasar","days":505,"act":31.33,"opt":10.0,"saving":68.1,"avgn":16.9},{"name":"UNIT SALUPUTTI RANTEPAO","region":"Makassar","days":919,"act":73.32,"opt":24.34,"saving":66.8,"avgn":16.1},{"name":"UNIT SALUPUTTI","region":"Makassar","days":8,"act":97.01,"opt":35.88,"saving":63.0,"avgn":17.8},{"name":"UNIT RABA","region":"Denpasar","days":345,"act":17.41,"opt":6.62,"saving":62.0,"avgn":16.6},{"name":"UNIT GEGERKALONG","region":"Bandung","days":30,"act":64.33,"opt":24.5,"saving":61.9,"avgn":15.1},{"name":"UNIT PLERED PURWAKARTA","region":"Bandung","days":553,"act":14.98,"opt":5.76,"saving":61.5,"avgn":13.6},{"name":"UNIT PLAMPANG SUMBAWA BESAR","region":"Denpasar","days":759,"act":27.54,"opt":11.28,"saving":59.0,"avgn":16.0},{"name":"UNIT PANJAITAN","region":"KANWIL MALANG","days":189,"act":15.39,"opt":6.3,"saving":59.0,"avgn":17.6},{"name":"UNIT PANJAITAN LUMAJANG","region":"KANWIL MALANG","days":705,"act":16.26,"opt":6.69,"saving":58.9,"avgn":17.1},{"name":"UNIT BUNGBULANG","region":"Bandung","days":199,"act":35.36,"opt":14.64,"saving":58.6,"avgn":16.1},{"name":"UNIT PIRU MASOHI","region":"Makassar","days":760,"act":47.43,"opt":19.77,"saving":58.3,"avgn":15.9},{"name":"UNIT PLAMPANG","region":"Denpasar","days":124,"act":22.63,"opt":9.46,"saving":58.2,"avgn":14.9},{"name":"UNIT POLEWALI POLEWALI","region":"Makassar","days":623,"act":17.92,"opt":7.58,"saving":57.7,"avgn":21.8},{"name":"UNIT PUJER","region":"KANWIL MALANG","days":450,"act":26.92,"opt":11.45,"saving":57.5,"avgn":13.3},{"name":"UNIT BATURADEN PURWOKERTO","region":"Yogyakarta","days":669,"act":14.78,"opt":6.31,"saving":57.3,"avgn":13.9},{"name":"UNIT PIRU","region":"Makassar","days":157,"act":33.67,"opt":14.41,"saving":57.2,"avgn":15.5},{"name":"UNIT PUJER BONDOWOSO","region":"KANWIL MALANG","days":541,"act":32.1,"opt":13.83,"saving":56.9,"avgn":13.8},{"name":"UNIT MONTA","region":"Denpasar","days":401,"act":23.69,"opt":10.37,"saving":56.2,"avgn":13.3},{"name":"UNIT MANGUNEGARA PURBALINGGA","region":"Yogyakarta","days":418,"act":14.8,"opt":6.52,"saving":55.9,"avgn":9.6},{"name":"UNIT BUMIAYU POLEWALI","region":"Makassar","days":601,"act":18.39,"opt":8.16,"saving":55.6,"avgn":13.7},{"name":"UNIT CIROYOM","region":"Bandung","days":683,"act":4.99,"opt":2.25,"saving":54.8,"avgn":17.3},{"name":"UNIT BANGGAE MAJENE","region":"Makassar","days":573,"act":18.91,"opt":8.58,"saving":54.6,"avgn":13.3},{"name":"UNIT KEMPO","region":"Denpasar","days":630,"act":21.41,"opt":9.85,"saving":54.0,"avgn":16.6},{"name":"UNIT BUNGBULANG GARUT","region":"Bandung","days":997,"act":28.94,"opt":13.32,"saving":54.0,"avgn":16.0},{"name":"UNIT MONTA DOMPU","region":"Denpasar","days":410,"act":25.62,"opt":11.87,"saving":53.7,"avgn":11.8},{"name":"UNIT PASIRIAN LUMAJANG","region":"KANWIL MALANG","days":886,"act":29.36,"opt":13.75,"saving":53.2,"avgn":16.1},{"name":"UNIT BESUKI 2","region":"KANWIL MALANG","days":138,"act":44.23,"opt":20.73,"saving":53.1,"avgn":15.3},{"name":"UNIT SUDIRMAN LUMAJANG","region":"KANWIL MALANG","days":872,"act":22.21,"opt":10.41,"saving":53.1,"avgn":14.9},{"name":"UNIT BATURADEN","region":"Yogyakarta","days":203,"act":14.27,"opt":6.74,"saving":52.8,"avgn":12.0},{"name":"UNIT KEMPO DOMPU","region":"Denpasar","days":383,"act":25.22,"opt":12.0,"saving":52.4,"avgn":14.8},{"name":"UNIT BUMIAYU","region":"Makassar","days":93,"act":18.81,"opt":8.99,"saving":52.2,"avgn":13.7},{"name":"UNIT CIROYOM BANDUNG N","region":"Bandung","days":6,"act":8.2,"opt":3.92,"saving":52.2,"avgn":15.0},{"name":"UNIT GEGER KALONG BANDUNG","region":"Bandung","days":887,"act":37.42,"opt":18.1,"saving":51.6,"avgn":15.4},{"name":"UNIT PERNASIDI AJIBARANG","region":"Yogyakarta","days":804,"act":15.42,"opt":7.51,"saving":51.3,"avgn":14.3},{"name":"UNIT PERNASIDI","region":"Yogyakarta","days":204,"act":19.4,"opt":9.53,"saving":50.9,"avgn":14.2},{"name":"UNIT SUMBANG PURWOKERTO","region":"Yogyakarta","days":769,"act":13.08,"opt":6.43,"saving":50.8,"avgn":13.6},{"name":"UNIT BESUKI II SITUBONDO","region":"KANWIL MALANG","days":975,"act":25.3,"opt":12.5,"saving":50.6,"avgn":14.6},{"name":"UNIT POLEWALI","region":"Makassar","days":27,"act":16.03,"opt":7.96,"saving":50.4,"avgn":17.2},{"name":"UNIT CIMAREME CIMAHI","region":"Bandung","days":769,"act":20.83,"opt":10.61,"saving":49.1,"avgn":13.8},{"name":"UNIT BANGGAE","region":"Makassar","days":249,"act":20.84,"opt":10.73,"saving":48.5,"avgn":13.1},{"name":"UNIT LEGIAN DENPASAR KUTA","region":"Denpasar","days":578,"act":43.99,"opt":23.09,"saving":47.5,"avgn":15.7},{"name":"UNIT MANGUNEGARA","region":"Yogyakarta","days":155,"act":13.5,"opt":7.23,"saving":46.5,"avgn":11.5},{"name":"UNIT PASIRIAN","region":"KANWIL MALANG","days":237,"act":33.98,"opt":18.96,"saving":44.2,"avgn":14.8},{"name":"UNIT SUMBANG","region":"Yogyakarta","days":415,"act":12.23,"opt":6.89,"saving":43.7,"avgn":12.4},{"name":"UNIT CIMAREME","region":"Bandung","days":137,"act":39.03,"opt":22.06,"saving":43.5,"avgn":10.9},{"name":"UNIT 7629 LEGIAN","region":"Denpasar","days":72,"act":33.52,"opt":19.34,"saving":42.3,"avgn":11.8},{"name":"UNIT KASIHAN BANTUL","region":"Yogyakarta","days":719,"act":19.75,"opt":11.43,"saving":42.1,"avgn":16.6},{"name":"UNIT PLERED","region":"Bandung","days":91,"act":22.19,"opt":13.16,"saving":40.7,"avgn":13.4},{"name":"UNIT KASIHAN","region":"Yogyakarta","days":224,"act":22.76,"opt":13.56,"saving":40.4,"avgn":15.8}],"weekly":[{"week":1,"act":28.31,"opt":13.27,"days":214},{"week":2,"act":27.68,"opt":12.52,"days":1045},{"week":3,"act":34.66,"opt":15.83,"days":853},{"week":4,"act":28.96,"opt":12.52,"days":1143},{"week":5,"act":32.41,"opt":13.29,"days":1280},{"week":6,"act":33.86,"opt":14.2,"days":1055},{"week":7,"act":30.2,"opt":12.78,"days":1202},{"week":8,"act":29.4,"opt":12.95,"days":896},{"week":9,"act":28.35,"opt":12.04,"days":1228},{"week":10,"act":27.76,"opt":11.95,"days":1179},{"week":11,"act":26.12,"opt":11.69,"days":1169},{"week":12,"act":23.52,"opt":10.77,"days":523},{"week":13,"act":22.04,"opt":10.37,"days":782},{"week":14,"act":22.41,"opt":10.33,"days":685},{"week":15,"act":22.4,"opt":10.03,"days":932},{"week":16,"act":24.83,"opt":10.85,"days":963},{"week":17,"act":21.11,"opt":9.9,"days":997},{"week":18,"act":21.13,"opt":9.91,"days":688},{"week":19,"act":21.76,"opt":10.44,"days":1004},{"week":20,"act":19.33,"opt":9.75,"days":681},{"week":21,"act":21.36,"opt":9.91,"days":1022},{"week":22,"act":18.77,"opt":9.21,"days":724},{"week":23,"act":22.08,"opt":10.22,"days":714},{"week":24,"act":21.7,"opt":10.13,"days":961},{"week":25,"act":22.66,"opt":11.37,"days":201}],"example":{"uker":"UNIT SUMBANG PURWOKERTO","tgl":"2026-01-29","act":[[-7.369303,109.273976],[-7.381741,109.281996],[-7.367327,109.275551],[-7.380464,109.274104],[-7.375963,109.275911],[-7.3828,109.276913],[-7.385169,109.277515],[-7.37631,109.274426],[-7.369866,109.2748],[-7.369959,109.274616],[-7.370146,109.272938],[-7.376711,109.287808]],"opt":[[-7.369303,109.273976],[-7.369959,109.274616],[-7.369866,109.2748],[-7.370146,109.272938],[-7.367327,109.275551],[-7.375963,109.275911],[-7.37631,109.274426],[-7.380464,109.274104],[-7.3828,109.276913],[-7.385169,109.277515],[-7.381741,109.281996],[-7.376711,109.287808]],"act_km":10.21,"opt_km":4.5},"eval":{"km_dist":[{"b":"0-5","v":5437},{"b":"5-10","v":3324},{"b":"10-15","v":2839},{"b":"15-20","v":2158},{"b":"20-30","v":2890},{"b":"30+","v":5494}],"visit_dist":[{"b":"1-4","v":1664},{"b":"5-7","v":1372},{"b":"8-10","v":1244},{"b":"11-13","v":1566},{"b":"14-16","v":7876},{"b":"17+","v":8420}],"hour_hist":[{"h":6,"v":350},{"h":7,"v":2224},{"h":8,"v":11860},{"h":9,"v":23836},{"h":10,"v":36387},{"h":11,"v":29725},{"h":12,"v":24044},{"h":13,"v":26612},{"h":14,"v":28329},{"h":15,"v":32681},{"h":16,"v":34542},{"h":17,"v":30998},{"h":18,"v":23814},{"h":19,"v":12601}],"stats":{"km_mean":25.9,"km_median":14.0,"km_p90":58.4,"km_max":498.3,"legshare":31.7,"over20":37.8,"start_mean":9.6,"km_per_visit":0.98,"top25share":69.3,"severe_backtrack":13.4}}};
+const fmt = n => n.toLocaleString('id-ID');
+const k = DATA.kpi;
+
+document.getElementById('h-save').textContent = k.saving_pct;
+
+// KPI strip
+const kpiDefs = [
+  ['Total kunjungan',fmt(k.total_visits),k.n_mantri+' mantri · '+k.n_uker+' unit kerja'],
+  ['Rata-rata rute/hari',k.avg_km_day+' <small>km</small>',k.avg_visits_day+' kunjungan per hari'],
+  ['Rute optimal/hari',k.opt_km_day+' <small>km</small>','hasil model NN + 2-opt'],
+  ['Total jarak terpangkas',fmt(k.km_saved_total)+' <small>km</small>','akumulasi '+fmt(k.mantri_days)+' mantri-hari'],
+];
+document.getElementById('kpis').innerHTML = kpiDefs.map(d=>
+  `<div class="kpi"><div class="lbl">${d[0]}</div><div class="val">${d[1]}</div><div class="sub">${d[2]}</div></div>`).join('');
+
+// Impact callout
+const tripPerKm = 0.12; // estimasi liter/km motor -> keep simple, show km & capacity
+document.getElementById('impact').innerHTML = [
+  [k.saving_pct+'%','rata-rata jarak rute dipangkas per hari'],
+  [fmt(k.km_saved_total)+' km','total jarak yang dapat dihemat dalam periode data'],
+  ['+'+Math.round(k.saving_pct/100*k.avg_visits_day*10)/10,'estimasi tambahan kapasitas kunjungan/hari per mantri']
+].map(x=>`<div><div class="n">${x[0]}</div><div class="l">${x[1]}</div></div>`).join('');
+
+const NAVY='#13335c',AMBER='#e8a13a',RUST='#b3492d',TEAL='#1f8a78',MUTED='#5b6675';
+const hasChart = typeof Chart !== 'undefined';
+if(hasChart){Chart.defaults.font.family="'Inter',sans-serif";Chart.defaults.color=MUTED;}
+function chart(id,cfg){ if(!hasChart) return; try{ new Chart(document.getElementById(id),cfg);}catch(e){console.warn('chart',id,e);} }
+
+// Trend
+chart('trend',{type:'line',
+  data:{labels:DATA.weekly.map(w=>'W'+w.week),datasets:[
+    {label:'Aktual',data:DATA.weekly.map(w=>w.act),borderColor:RUST,backgroundColor:'rgba(179,73,45,.08)',fill:true,tension:.35,borderWidth:2.5,pointRadius:0},
+    {label:'Optimal',data:DATA.weekly.map(w=>w.opt),borderColor:TEAL,backgroundColor:'rgba(31,138,120,.08)',fill:true,tension:.35,borderWidth:2.5,pointRadius:0}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8}}},
+    scales:{y:{title:{display:true,text:'km / mantri-hari'},grid:{color:'#eee'}},x:{grid:{display:false}}}}});
+
+// Donut
+const vt=k.visit_types||{penagihan:205222,pemasaran:125590,pembinaan:9573,ots:1027};
+chart('donut',{type:'doughnut',
+  data:{labels:['Penagihan','Pemasaran','Pembinaan','OTS / lainnya'],
+    datasets:[{data:[vt.penagihan,vt.pemasaran||vt.penagihan_extracomp||0,vt.pembinaan,vt.ots||1027],
+      backgroundColor:[NAVY,'#3b82c4',AMBER,'#c9b48f'],borderWidth:2,borderColor:'#fff'}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8,padding:12}}}}});
+
+// Region bar
+const reg=[...DATA.region].sort((a,b)=>b.saving-a.saving);
+chart('region',{type:'bar',
+  data:{labels:reg.map(r=>r.name),datasets:[
+    {label:'Km aktual/hari',data:reg.map(r=>r.act),backgroundColor:RUST,borderRadius:5,yAxisID:'y'},
+    {label:'Km optimal/hari',data:reg.map(r=>r.opt),backgroundColor:TEAL,borderRadius:5,yAxisID:'y'},
+    {label:'Penghematan %',data:reg.map(r=>r.saving),type:'line',borderColor:AMBER,borderWidth:3,pointRadius:4,pointBackgroundColor:AMBER,yAxisID:'y1'}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8}}},
+    scales:{y:{position:'left',title:{display:true,text:'km'},grid:{color:'#eee'}},
+      y1:{position:'right',title:{display:true,text:'%'},min:0,max:80,grid:{display:false}},x:{grid:{display:false}}}}});
+
+// Uker table
+const tbody=document.querySelector('#uktbl tbody');
+function renderUk(sortKey){
+  const rows=[...DATA.uker].filter(u=>u.days>=15).sort((a,b)=>b[sortKey]-a[sortKey]).slice(0,18);
+  const maxS=Math.max(...rows.map(r=>r.saving));
+  tbody.innerHTML=rows.map(u=>`<tr>
+    <td><div style="font-weight:600">${u.name.replace('UNIT ','')}</div><div style="font-size:11px;color:var(--muted)">${u.region} · ${u.avgn} kunj/hari</div></td>
+    <td class="num">${u.act}</td><td class="num" style="color:var(--teal)">${u.opt}</td>
+    <td><div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:${u.saving/maxS*70}px"></div><span class="mono" style="font-weight:600;font-size:12px">${u.saving}%</span></div></td>
+  </tr>`).join('');
+}
+renderUk('saving');
+document.querySelectorAll('#uktools button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#uktools button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');renderUk(b.dataset.sort);});
+
+// Map
+const ex=DATA.example;
+if(ex && typeof L !== 'undefined'){
+  const all=ex.act;
+  const lat=all.map(p=>p[0]),lon=all.map(p=>p[1]);
+  const ctr=[lat.reduce((a,b)=>a+b)/lat.length,lon.reduce((a,b)=>a+b)/lon.length];
+  const map=L.map('map',{scrollWheelZoom:false}).setView(ctr,14);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap, © CARTO',maxZoom:19}).addTo(map);
+  L.polyline(ex.act,{color:'#b3492d',weight:3,opacity:.75,dashArray:'2,6'}).addTo(map);
+  L.polyline(ex.opt,{color:'#1f8a78',weight:4,opacity:.9}).addTo(map);
+  ex.opt.forEach((p,i)=>{
+    L.circleMarker(p,{radius:11,fillColor:'#13335c',color:'#fff',weight:2,fillOpacity:1}).addTo(map)
+      .bindTooltip(String(i+1),{permanent:true,direction:'center',className:'mk'});
+  });
+  map.fitBounds(L.polyline(ex.act).getBounds().pad(0.15));
+}
+if(ex){
+  document.getElementById('mapstat').innerHTML=[
+    [ex.uker.replace('UNIT ',''),'Unit kerja'],[ex.tgl,'Tanggal'],
+    [ex.act_km+' km','Rute aktual'],[ex.opt_km+' km','Rute optimal'],
+    [Math.round((ex.act_km-ex.opt_km)/ex.act_km*100)+'%','Penghematan']
+  ].map(s=>`<div><div class="n">${s[0]}</div><div class="l">${s[1]}</div></div>`).join('');
+}
+const st=document.createElement('style');
+st.textContent='.mk{background:transparent;border:0;box-shadow:none;color:#fff;font-weight:700;font-size:11px}.leaflet-tooltip.mk:before{display:none}';
+document.head.appendChild(st);
+</script>
+</body>
+</html>
