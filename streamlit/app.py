@@ -18,7 +18,7 @@ from streamlit_folium import st_folium
 # ----------------------------------------------------------------------
 # Page config & BRI styling
 # ----------------------------------------------------------------------
-st.set_page_config(page_title="Rekomendasi Rute Mantri — BRI",
+st.set_page_config(page_title="Rekomendasi Rute - MRM",
                    page_icon="🛵", layout="wide")
 
 BRI = "#0857C3"
@@ -171,8 +171,8 @@ def make_map(df, order):
 # Sidebar — input
 # ----------------------------------------------------------------------
 with st.sidebar:
-    st.markdown(f"### 🛵 Rute Mantri")
-    st.caption("Micro Risk Management Group · BRI")
+    st.markdown(f"### Optimalisasi Rute")
+    st.caption("Micro Risk Management")
     st.markdown("---")
     st.markdown("**1. Sumber data titik kunjungan**")
     source = st.radio("Pilih sumber:",
