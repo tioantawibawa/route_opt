@@ -300,7 +300,7 @@ with right:
 
     # ---- Estimasi jarak, waktu & BBM ----
     road_km = opt_len * detour                       # jarak jalan ≈ garis lurus × faktor koreksi
-    travel_min = road_km / speed * 60 if speed else 0
+    travel_min = (road_km*2) / speed * 60 if speed else 0
     total_min = travel_min + visit_min * len(od)     # tempuh + waktu kunjungan
     liters = road_km / fuel_eff if fuel_eff else 0
     fuel_cost = liters * fuel_price
